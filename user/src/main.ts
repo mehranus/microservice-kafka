@@ -1,17 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { UserModule } from './user.module';
-import { RmqOptions, Transport } from '@nestjs/microservices';
+import { KafkaOptions, Transport } from '@nestjs/microservices';
 
 
 async function bootstrap() {
   const app = await NestFactory.createMicroservice(UserModule,{
-   transport:Transport.RMQ,
+   transport:Transport.KAFKA,
    options:{
-    urls:["amqp://localhost:5672"],
-    queue:"user-queue",
-    queueOptions:{}
+   client:{
+    clientId:'user',
+    brokers:["localhost:29092"]
+   },
+   consumer:{
+    groupId: "user-consumer"
    }
-  } as RmqOptions)
+   }
+  } as KafkaOptions)
   await app.listen();
   console.log("user service run ")
 }
