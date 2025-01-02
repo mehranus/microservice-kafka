@@ -1,5 +1,5 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Inject, InternalServerErrorException, Post, Req } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Body, Controller, Get, HttpException, HttpStatus, Inject, InternalServerErrorException, OnModuleInit, Post, Req } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { LoginDto, SignUpDto } from './dto/user.dto';
 import { catchError, lastValueFrom } from 'rxjs';
@@ -9,11 +9,23 @@ import { Request } from 'express';
 
 @Controller('user')
 @ApiTags("User")
-export class UserController {
+export class UserController implements OnModuleInit {
   constructor(
-    @Inject("USER_SERVICE") private readonly  userClinetService:ClientProxy,
-    @Inject("TOKEN_SERVICE") private readonly  tokenClinetService:ClientProxy,
+    @Inject("USER_SERVICE") private readonly  userClinetService:ClientKafka,
+    @Inject("TOKEN_SERVICE") private readonly  tokenClinetService:ClientKafka,
   ) {}
+
+  async onModuleInit() {
+    this.userClinetService.subscribeToResponseOf('signup')
+    this.userClinetService.subscribeToResponseOf('login')
+    this.tokenClinetService.subscribeToResponseOf('destroy_token')
+    this.tokenClinetService.subscribeToResponseOf('create_token_user')
+    await Promise.all([
+      this.tokenClinetService.connect(),
+      this.userClinetService.connect(),
+    ])
+    
+  }
 
   @Post('signup')
   @ApiConsumes('application/x-www-form-urlencoded')

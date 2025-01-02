@@ -1,5 +1,5 @@
-import { Body, Controller, Delete, Get, HttpException, Inject, InternalServerErrorException, Post, Put, Req } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
+import { Body, Controller, Delete, Get, HttpException, Inject, InternalServerErrorException, OnModuleInit, Post, Put, Req } from '@nestjs/common';
+import { ClientKafka, ClientProxy } from '@nestjs/microservices';
 import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 
 import { catchError, lastValueFrom } from 'rxjs';
@@ -11,11 +11,20 @@ import { RemoveTaskDto, TaskDto, updatetaskDto } from './dto/task.dto';
 
 @Controller('task')
 @ApiTags("Task")
-export class TaskController {
+export class TaskController implements OnModuleInit {
   constructor(
-    @Inject("TASK_SERVICE") private readonly  taskClinetService:ClientProxy,
+    @Inject("TASK_SERVICE") private readonly  taskClinetService:ClientKafka,
 
   ) {}
+
+ async onModuleInit() {
+    this.taskClinetService.subscribeToResponseOf('create_task')
+    this.taskClinetService.subscribeToResponseOf('user_task')
+    this.taskClinetService.subscribeToResponseOf('delete_task')
+    this.taskClinetService.subscribeToResponseOf('update_task')
+
+    await this.taskClinetService.connect()
+  }
 
   @Post('create')
   @Auth()
