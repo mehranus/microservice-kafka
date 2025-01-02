@@ -1,11 +1,12 @@
 import { Body, Controller, Delete, Get, HttpException, Inject, InternalServerErrorException, OnModuleInit, Post, Put, Req } from '@nestjs/common';
-import { ClientKafka, ClientProxy } from '@nestjs/microservices';
+import { ClientKafka } from '@nestjs/microservices';
 import { ApiConsumes, ApiTags } from '@nestjs/swagger';
 
 import { catchError, lastValueFrom } from 'rxjs';
 import { Auth } from './decorator/auth.decorator';
 import { Request } from 'express';
 import { RemoveTaskDto, TaskDto, updatetaskDto } from './dto/task.dto';
+import { ResposeType } from './types/respons.type';
 
 
 
@@ -30,13 +31,13 @@ export class TaskController implements OnModuleInit {
   @Auth()
   @ApiConsumes('application/x-www-form-urlencoded')
    async create(@Body() createDto:TaskDto,@Req() req:Request){
-    const respons=await lastValueFrom(
+    const respons:ResposeType=await new Promise((resolve,reject)=>{
       this.taskClinetService.send("create_task",{
         title:createDto.title,
         content:createDto.content,
         userId:req.user?._id
-      })
-    )
+      }).subscribe((data)=>resolve(data))
+    })
     if(respons?.error){
       throw new HttpException(respons?.message,respons?.status ?? 500)
     }
@@ -49,9 +50,10 @@ export class TaskController implements OnModuleInit {
   @Auth()
   @ApiConsumes('application/x-www-form-urlencoded')
    async userTask(@Req() req:Request){
-    const respons=await lastValueFrom(
+    const respons:ResposeType=await new Promise((resolve,reject)=>{
       this.taskClinetService.send("user_task",{userId:req.user?._id})
-    )
+      .subscribe((data)=>resolve(data))
+    } )
 
     return respons?.data ?? {data:[]}
   }
@@ -59,14 +61,11 @@ export class TaskController implements OnModuleInit {
   @Auth()
   @ApiConsumes('application/x-www-form-urlencoded')
    async deleteTask(@Body() removeDto:RemoveTaskDto){
-    const respons=await lastValueFrom(
-      this.taskClinetService.send("delete_task",{title:removeDto.title}).pipe((
-        catchError(err=>{
-          throw err
-        })
-    ))
-  )
-  if(respons?.error) throw new HttpException(respons?.message,respons?.status || InternalServerErrorException)
+    const respons:ResposeType=await new Promise((resolve,reject)=>{
+      this.taskClinetService.send("delete_task",{title:removeDto.title})
+      .subscribe((deta)=>resolve(deta))
+   })
+  if(respons?.error) throw new HttpException(respons?.message,respons?.status || 500)
     
     return respons?.message
 
@@ -77,19 +76,16 @@ export class TaskController implements OnModuleInit {
   @ApiConsumes('application/x-www-form-urlencoded')
    async updateTask(@Body() updateDto:updatetaskDto,@Req() req:Request){
   
-    const respons=await lastValueFrom(
+    const respons:ResposeType=await new Promise((resolve,reject)=>{
       this.taskClinetService.send("update_task",{
         title:updateDto.title,
         content:updateDto.content,
         status:updateDto.status,
-        userId:req.user?._id}).pipe((
-        catchError(err=>{
-          throw err
-        })
-    ))
-  )
+        userId:req.user?._id})
+        .subscribe((data)=>resolve(data))
+   })
  
-  if(respons?.error) throw new HttpException(respons?.message,respons?.status || InternalServerErrorException)
+  if(respons?.error) throw new HttpException(respons?.message,respons?.status || 500)
     
     return {
      message: respons?.message,

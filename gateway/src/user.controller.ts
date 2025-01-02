@@ -5,6 +5,7 @@ import { LoginDto, SignUpDto } from './dto/user.dto';
 import { catchError, lastValueFrom } from 'rxjs';
 import { Auth } from './decorator/auth.decorator';
 import { Request } from 'express';
+import { ResposeType } from './types/respons.type';
 
 
 @Controller('user')
@@ -30,20 +31,16 @@ export class UserController implements OnModuleInit {
   @Post('signup')
   @ApiConsumes('application/x-www-form-urlencoded')
    async signup(@Body() signupDto:SignUpDto){
-    const respons=await lastValueFrom(
-      this.userClinetService.send("signup",signupDto).pipe((
-        catchError(err=>{
-          throw err
-        })
-      ))
-    )
+    const respons:ResposeType=await new Promise((resolve,reject)=>{
+      this.userClinetService.send("signup",signupDto).subscribe((data)=>resolve(data))
+   })
     if(respons?.error){
       throw new HttpException(respons?.message,respons?.status ?? 500)
     }
     if(respons?.data){
-      const responsToken=await lastValueFrom(
-        this.tokenClinetService.send("create_token_user",{userId:respons?.data?.userId,email:respons?.data?.email})
-      )
+      const responsToken:ResposeType=await new Promise((resolve,reject)=>{
+        this.tokenClinetService.send("create_token_user",{userId:respons?.data?.userId,email:respons?.data?.email}).subscribe((data)=>resolve(data))
+    })
       if(responsToken?.data?.token){
         return{
           token:responsToken?.data?.token
@@ -55,20 +52,16 @@ export class UserController implements OnModuleInit {
   @Post('login')
   @ApiConsumes('application/x-www-form-urlencoded')
    async login(@Body() loginDto:LoginDto){
-    const respons=await lastValueFrom(
-      this.userClinetService.send("login",loginDto).pipe((
-        catchError(err=>{
-          throw err
-        })
-      ))
-    )
+    const respons:ResposeType=await new Promise( (resolve,reject)=>{
+      this.userClinetService.send("login",loginDto).subscribe((data)=>resolve(data))
+    } )
     if(respons?.error){
       throw new HttpException(respons?.message,respons?.status ?? 500)
     }
     if(respons?.data){
-      const responsToken=await lastValueFrom(
-        this.tokenClinetService.send("create_token_user",{userId:respons?.data?.userId,email:respons?.data?.email})
-      )
+      const responsToken:ResposeType=await new Promise( (resolve,reject)=>{
+        this.tokenClinetService.send("create_token_user",{userId:respons?.data?.userId,email:respons?.data?.email}).subscribe((data)=>resolve(data))
+    })
       if(responsToken?.data?.token){
         return{
           token:responsToken?.data?.token
@@ -88,9 +81,9 @@ export class UserController implements OnModuleInit {
   @Auth()
   async logoutUser(@Req() req:Request){
    const {_id}=req?.user
-   const response=await lastValueFrom(
-    this.tokenClinetService.send("destroy_token",{userId:_id})
-   )
+   const response:ResposeType=await new Promise( (resolve,reject)=>{
+    this.tokenClinetService.send("destroy_token",{userId:_id}).subscribe((data)=>resolve(data))
+   } )
 
    if(response?.error){
     throw new HttpException(response?.message,response?.status ?? HttpStatus.INTERNAL_SERVER_ERROR)

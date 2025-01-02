@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
-import { Payload } from './interface/payload.interface';
+import {  Payloadd } from './interface/payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Token, TokenDocument } from './schema/token.schema';
@@ -13,7 +13,7 @@ export class TokenService {
     private readonly jwtService:JwtService
   ){}
    
-  async createToken(payload:Payload){
+  async createToken(payload:Payloadd){
        const token= this.jwtService.sign(payload,{
         expiresIn:60*60*24,
         secret:"secrettoken@11_45"
